@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#1F4E79"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Checklist ETRR"/>
+<title>Checklist ETRR — Meta Central</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;background:#f4f6fa;overscroll-behavior:none}
+  input,textarea,button{font-family:inherit}
+  input:focus,textarea:focus{outline:2px solid #2E75B6;outline-offset:1px}
+  button:active{opacity:.82;transform:scale(.97)}
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:#f0f0f0}
+  ::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px}
+  .page{display:flex;flex-direction:column;height:100dvh;max-width:520px;margin:0 auto;background:#f4f6fa;overflow:hidden;position:relative}
+  .header{padding:16px 16px 18px;flex-shrink:0}
+  .body{flex:1;overflow-y:auto;padding:12px 16px 0;-webkit-overflow-scrolling:touch}
+  .footer{background:#fff;padding:12px 16px;border-top:1px solid #e0e0e0;flex-shrink:0;box-shadow:0 -4px 16px rgba(0,0,0,.07)}
+  .card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .card-title{font-weight:700;font-size:14px;color:#1F4E79;margin-bottom:12px;letter-spacing:.3px}
+  .item-card{background:#fff;border-radius:10px;padding:14px 14px 10px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+  .input{width:100%;padding:11px 14px;border-radius:8px;border:1.5px solid #dde3ef;font-size:15px;background:#f9fafc;margin-bottom:16px}
+  .chip-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .chip{flex:1;padding:10px 8px;border-radius:8px;border:2px solid #dde3ef;background:#f4f6fa;font-size:14px;font-weight:600;cursor:pointer;color:#555;transition:all .15s;min-width:80px;text-align:center}
+  .chip.on{background:#1F4E79;color:#fff;border-color:#1F4E79}
+  .btn-primary{width:100%;padding:14px;border-radius:10px;border:none;color:#fff;font-weight:700;font-size:15px;cursor:pointer;letter-spacing:.3px;transition:opacity .15s;margin-bottom:0}
+  .btn-primary:disabled{opacity:.45;cursor:not-allowed}
+  .btn-primary + .btn-primary{margin-top:10px}
+  .status-row{display:flex;gap:8px;margin-bottom:8px}
+  .status-btn{flex:1;padding:10px 4px;border-radius:8px;border:2px solid #ddd;background:#fafafa;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;text-align:center}
+  .obs-toggle{background:none;border:none;cursor:pointer;font-size:12px;color:#1F4E79;font-weight:600;padding:4px 0;display:flex;align-items:center;gap:4px}
+  .obs-input{width:100%;margin-top:6px;padding:10px;border-radius:8px;border:1.5px solid #dde3ef;font-size:14px;resize:none;background:#fafbfc}
+  .back-btn{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .progress-bar-outer{height:5px;background:rgba(255,255,255,.25);border-radius:3px;margin-top:10px}
+  .progress-bar-inner{height:100%;background:#fff;border-radius:3px;transition:width .4s}
+  .sec-pill{border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;margin:3px}
+  .stat-box{flex:1;border-radius:8px;padding:6px 0;text-align:center}
+  .tag{border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;display:inline-block;margin:2px}
+  .label{font-size:12px;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+  .spacer{height:16px}
+  .fin-icon{font-size:72px;margin-bottom:16px;display:block;text-align:center}
+  .fin-title{font-size:22px;font-weight:700;color:#1F4E79;margin-bottom:8px;text-align:center}
+  .fin-sub{color:#555;font-size:13px;text-align:center;margin-bottom:4px}
+  .fin-icons{display:flex;gap:16px;justify-content:center;margin-bottom:24px}
+  .sum-box{background:#EBF3FB;border-radius:12px;padding:16px 20px;margin-bottom:24px;width:100%;text-align:left}
+  .sum-title{font-weight:700;color:#1F4E79;margin-bottom:8px;font-size:13px}
+  .alert-banner{background:#8B0000;color:#fff;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:600;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useRef, useCallback } = React;
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const SECOES = [
+  {
+    id:"banheiros", icon:"🚻", titulo:"Banheiros e Vestiários",
+    cor:"#1F4E79", corClara:"#D6E4F0",
+    ambientes:["Banh. Masc. 1","Banh. Fem. 1","Banh. Masc. 2","Banh. Fem. 2","Vestiário M","Vestiário F"],
+    itens:[
+      "Troca do saco de lixo",
+      "Desinfecção dos vasos sanitários",
+      "Limpeza de pias e torneiras",
+      "Limpeza dos espelhos",
+      "Limpeza do piso e ralos",
+      "Reposição de papel higiênico",
+      "Reposição de papel toalha",
+      "Reposição de sabonete espuma",
+      "Reposição de protetor de assento",
+      "Dispensers em funcionamento",
+    ]
+  },
+  {
+    id:"salas", icon:"🏫", titulo:"Salas e Laboratórios",
+    cor:"#1A5C2E", corClara:"#D9EAD3",
+    ambientes:["Salas de Aula","Labs Tecnologia","Labs Informática","Labs Química","Labs Outros"],
+    itens:[
+      "Troca do saco de lixo",
+      "Varrição do piso",
+      "Limpeza úmida do piso",
+      "Limpeza de mesas e cadeiras / bancadas",
+      "Limpeza do quadro",
+      "Maçanetas e interruptores desinfetados",
+      "Equipamentos — superfície externa limpa",
+      "Mobiliário reposicionado",
+    ]
+  },
+  {
+    id:"refeitorio", icon:"🍽️", titulo:"Refeitório e Cozinha",
+    cor:"#BF5700", corClara:"#FCE5CD",
+    ambientes:["Pré-café","Pós-almoço","Encerramento","Cozinha"],
+    itens:[
+      "Mesas e cadeiras limpas",
+      "Varrição do piso",
+      "Lavagem do piso",
+      "Balcão de distribuição limpo",
+      "Lixo orgânico retirado",
+      "Bancadas da cozinha higienizadas",
+      "Pias e torneiras da cozinha limpas",
+      "Ralos e canaletas verificados",
+    ]
+  },
+  {
+    id:"externas", icon:"🏗️", titulo:"Áreas Externas",
+    cor:"#404040", corClara:"#F2F2F2",
+    ambientes:["Estacionamento","Rua Interna","Calçadas","Pátio Ext.","Ginásio","Auditório"],
+    itens:[
+      "Varrição e recolhimento de resíduos",
+      "Ralos externos verificados",
+      "Lixeiras externas limpas",
+      "Lavagem semanal realizada (se aplicável)",
+    ]
+  },
+  {
+    id:"insumos", icon:"📦", titulo:"Insumos e Dispensers",
+    cor:"#5B2C6F", corClara:"#EBD9F5",
+    ambientes:[],
+    itens:[
+      "Papel higiênico — estoque OK",
+      "Papel toalha — estoque OK",
+      "Sabonete espuma — estoque OK",
+      "Protetor de assento — estoque OK",
+      "Copos descartáveis — estoque OK",
+      "Detergente neutro — estoque OK",
+      "Todos os dispensers inspecionados",
+      "Algum dispenser com defeito? (use Obs.)",
+    ]
+  },
+];
+
+const STATUS = [
+  {val:"ok",   label:"✔ OK",    bg:"#1A5C2E", color:"#fff"},
+  {val:"pend", label:"✘ Pend.", bg:"#8B0000", color:"#fff"},
+  {val:"na",   label:"N/A",     bg:"#6c757d", color:"#fff"},
+];
+
+function hoje() {
+  return new Date().toLocaleDateString("pt-BR");
+}
+
+function gerarTexto(ident, respostas) {
+  const linhas = [
+    "📋 CHECKLIST ETRR — META CENTRAL DE SERVIÇOS",
+    `📅 Data: ${ident.data}   ⏰ Turno: ${ident.turno}`,
+    `👷 ${ident.cargo}: ${ident.nome}`,
+    `👔 Supervisor: ${ident.supervisor||"—"}`,
+    "─".repeat(38),
+  ];
+  SECOES.forEach(s => {
+    linhas.push(`\n${s.icon} ${s.titulo.toUpperCase()}`);
+    s.itens.forEach((item, i) => {
+      const r = respostas[`${s.id}_${i}`] || {};
+      const ico = r.status==="ok" ? "✔" : r.status==="pend" ? "✘" : "–";
+      const obs = r.obs ? `  → ${r.obs}` : "";
+      linhas.push(`  ${ico} ${item}${obs}`);
+    });
+  });
+  if (ident.obs_final) {
+    linhas.push(`\n📝 Obs. Gerais: ${ident.obs_final}`);
+  }
+  linhas.push(`\n⏱ Registrado: ${new Date().toLocaleString("pt-BR")}`);
+  return linhas.join("\n");
+}
+
+function statSec(s, respostas) {
+  const ok   = s.itens.filter((_,i)=>(respostas[`${s.id}_${i}`]||{}).status==="ok").length;
+  const pend = s.itens.filter((_,i)=>(respostas[`${s.id}_${i}`]||{}).status==="pend").length;
+  return { ok, pend, total: s.itens.length };
+}
+
+// ─── COMPONENTS ──────────────────────────────────────────────────────────────
+function Lbl({children}) {
+  return <div className="label" style={{marginBottom:6}}>{children}</div>;
+}
+
+function StatBar({ok, pend, na}) {
+  return (
+    <div style={{display:"flex", gap:8}}>
+      {[{n:ok,l:"OK",c:"#1A5C2E",bg:"#D9EAD3"},{n:pend,l:"Pend.",c:"#8B0000",bg:"#FDECEA"},{n:na,l:"N/A",c:"#555",bg:"#eee"}].map(x=>(
+        <div key={x.l} className="stat-box" style={{background:x.bg}}>
+          <div style={{fontWeight:800,fontSize:18,color:x.c}}>{x.n}</div>
+          <div style={{fontSize:11,color:x.c,fontWeight:600}}>{x.l}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── APP ─────────────────────────────────────────────────────────────────────
+function App() {
+  const [tela, setTela]         = useState("ident");
+  const [secIdx, setSecIdx]     = useState(0);
+  const [ident, setIdent]       = useState({nome:"",cargo:"ASG",turno:"Manhã",supervisor:"",data:hoje(),obs_final:""});
+  const [respostas, setRespostas] = useState({});
+  const [obsAberta, setObsAberta] = useState(null);
+  const [copied, setCopied]     = useState(false);
+  const bodyRef = useRef(null);
+
+  const sec = SECOES[secIdx];
+  const totalItens = SECOES.reduce((a,s)=>a+s.itens.length,0);
+  const respondidos = Object.keys(respostas).length;
+  const pct = Math.round((respondidos/totalItens)*100);
+
+  const setResp = (key, status) => {
+    setRespostas(p => ({...p, [key]:{...(p[key]||{}), status}}));
+  };
+  const setObs = (key, obs) => {
+    setRespostas(p => ({...p, [key]:{...(p[key]||{}), obs}}));
+  };
+
+  const irSec = (dir) => {
+    setObsAberta(null);
+    if (dir > 0) {
+      if (secIdx < SECOES.length-1) { setSecIdx(s=>s+1); bodyRef.current?.scrollTo(0,0); }
+      else setTela("resumo");
+    } else {
+      if (secIdx > 0) { setSecIdx(s=>s-1); bodyRef.current?.scrollTo(0,0); }
+      else setTela("ident");
+    }
+  };
+
+  const copiar = () => {
+    const txt = gerarTexto(ident, respostas);
+    if (navigator.share) {
+      navigator.share({ title:"Checklist ETRR", text: txt }).catch(()=>{});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(txt).then(()=>{ setCopied(true); setTimeout(()=>setCopied(false),2500); });
+    } else {
+      // fallback
+      const el = document.createElement("textarea");
+      el.value = txt; document.body.appendChild(el); el.select();
+      document.execCommand("copy"); document.body.removeChild(el);
+      setCopied(true); setTimeout(()=>setCopied(false),2500);
+    }
+  };
+
+  const novoTurno = () => {
+    setRespostas({}); setSecIdx(0); setObsAberta(null);
+    setIdent({nome:"",cargo:"ASG",turno:"Manhã",supervisor:"",data:hoje(),obs_final:""});
+    setTela("ident");
+  };
+
+  // ── TELA: IDENTIFICAÇÃO ───────────────────────────────────────────────────
+  if (tela === "ident") return (
+    <div className="page">
+      <div className="header" style={{background:"#1F4E79"}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:4}}>
+          <span style={{fontSize:22,fontWeight:900,color:"#fff",letterSpacing:1}}>META</span>
+          <span style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>Central de Serviços</span>
+        </div>
+        <div style={{fontSize:18,fontWeight:700,color:"#fff"}}>Checklist Operacional</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:2}}>ETRR — Santa Cruz, RJ</div>
+      </div>
+
+      <div className="body" ref={bodyRef}>
+        <div className="card">
+          <div className="card-title">📋 Identificação do Turno</div>
+
+          <Lbl>Data</Lbl>
+          <input className="input" value={ident.data}
+            onChange={e=>setIdent(p=>({...p,data:e.target.value}))}
+            placeholder="dd/mm/aaaa"/>
+
+          <Lbl>Turno</Lbl>
+          <div className="chip-row">
+            {["Manhã","Tarde"].map(t=>(
+              <button key={t} className={`chip${ident.turno===t?" on":""}`}
+                onClick={()=>setIdent(p=>({...p,turno:t}))}>
+                {t==="Manhã"?"🌅 Manhã":"🌆 Tarde"}
+              </button>
+            ))}
+          </div>
+
+          <Lbl>Seu nome</Lbl>
+          <input className="input" value={ident.nome}
+            onChange={e=>setIdent(p=>({...p,nome:e.target.value}))}
+            placeholder="Nome completo"/>
+
+          <Lbl>Cargo</Lbl>
+          <div className="chip-row">
+            {["ASG","Supervisor"].map(c=>(
+              <button key={c} className={`chip${ident.cargo===c?" on":""}`}
+                onClick={()=>setIdent(p=>({...p,cargo:c}))}>
+                {c==="ASG"?"🧹 ASG":"👷 Supervisor"}
+              </button>
+            ))}
+          </div>
+
+          <Lbl>Supervisor responsável</Lbl>
+          <input className="input" value={ident.supervisor}
+            onChange={e=>setIdent(p=>({...p,supervisor:e.target.value}))}
+            placeholder="Nome do supervisor"
+            style={{marginBottom:0}}/>
+        </div>
+
+        {/* Mini-progresso das seções */}
+        <div className="card" style={{paddingBottom:12}}>
+          <div className="card-title">Seções do checklist</div>
+          <div style={{display:"flex",flexWrap:"wrap"}}>
+            {SECOES.map(s=>{
+              const st = statSec(s,respostas);
+              const completa = st.ok+st.total-st.ok-st.pend===s.itens.length;
+              const bg = st.ok===s.itens.length ? s.cor : st.ok>0 ? s.corClara : "#eee";
+              const fc = st.ok===s.itens.length ? "#fff" : s.cor;
+              return (
+                <span key={s.id} className="sec-pill" style={{background:bg,color:fc}}>
+                  {s.icon} {s.titulo.split(" ")[0]}
+                  <span style={{fontSize:10,opacity:.8}}>{st.ok}/{st.total}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+        <div className="spacer"/>
+      </div>
+
+      <div className="footer">
+        <button className="btn-primary" style={{background:"#1F4E79"}}
+          disabled={!ident.nome}
+          onClick={()=>{setSecIdx(0);setTela("sec");}}>
+          Iniciar Checklist →
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── TELA: SEÇÃO ───────────────────────────────────────────────────────────
+  if (tela === "sec") {
+    const st = statSec(sec, respostas);
+    return (
+      <div className="page">
+        <div className="header" style={{background:sec.cor}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+            <button className="back-btn" onClick={()=>irSec(-1)}>← Voltar</button>
+            <span style={{color:"rgba(255,255,255,.75)",fontSize:12}}>{secIdx+1} / {SECOES.length}</span>
+          </div>
+          <div style={{fontSize:26,marginBottom:2}}>{sec.icon}</div>
+          <div style={{fontSize:17,fontWeight:700,color:"#fff",lineHeight:1.3}}>{sec.titulo}</div>
+          <div className="progress-bar-outer">
+            <div className="progress-bar-inner" style={{width:`${pct}%`}}/>
+          </div>
+          <div style={{color:"rgba(255,255,255,.75)",fontSize:11,marginTop:4}}>{pct}% do checklist completo</div>
+        </div>
+
+        <div className="body" ref={bodyRef}>
+          {sec.itens.map((item, idx) => {
+            const key = `${sec.id}_${idx}`;
+            const r   = respostas[key] || {};
+            const open = obsAberta === key;
+            return (
+              <div key={key} className="item-card" style={{borderLeft:`4px solid ${sec.cor}`}}>
+                <div style={{fontSize:14,fontWeight:600,color:"#1a1a1a",marginBottom:10,lineHeight:1.4}}>
+                  {item}
+                </div>
+                <div className="status-row">
+                  {STATUS.map(opt=>(
+                    <button key={opt.val} className="status-btn"
+                      style={{
+                        borderColor: r.status===opt.val ? opt.bg : "#ddd",
+                        background:  r.status===opt.val ? opt.bg : "#fafafa",
+                        color:       r.status===opt.val ? opt.color : "#555",
+                        transform:   r.status===opt.val ? "scale(1.04)" : "scale(1)",
+                      }}
+                      onClick={()=>setResp(key, opt.val)}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {r.status && (
+                  <div>
+                    <button className="obs-toggle"
+                      onClick={()=>setObsAberta(open?null:key)}>
+                      {open ? "▲ Fechar" : `📝 ${r.obs?"Editar obs.":"Adicionar obs."}`}
+                      {r.obs && !open && <span style={{marginLeft:6,background:sec.cor,color:"#fff",borderRadius:10,padding:"1px 8px",fontSize:11}}>✔</span>}
+                    </button>
+                    {open && (
+                      <textarea className="obs-input"
+                        placeholder="Descreva: local específico, ação tomada, material faltando..."
+                        value={r.obs||""}
+                        onChange={e=>setObs(key,e.target.value)}
+                        rows={3}/>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {sec.ambientes.length > 0 && (
+            <div className="card">
+              <div style={{fontSize:11,fontWeight:700,color:sec.cor,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>
+                Ambientes desta seção
+              </div>
+              <div>
+                {sec.ambientes.map(a=>(
+                  <span key={a} className="tag" style={{background:sec.corClara,color:sec.cor}}>{a}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="spacer"/>
+        </div>
+
+        <div className="footer">
+          <StatBar ok={st.ok} pend={st.pend} na={st.total-st.ok-st.pend}/>
+          <div style={{height:10}}/>
+          <button className="btn-primary" style={{background:sec.cor}} onClick={()=>irSec(1)}>
+            {secIdx < SECOES.length-1
+              ? `Próxima → ${SECOES[secIdx+1].icon} ${SECOES[secIdx+1].titulo.split(" ")[0]}`
+              : "📊 Ver Resumo →"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── TELA: RESUMO ─────────────────────────────────────────────────────────
+  if (tela === "resumo") {
+    const totOk   = SECOES.reduce((a,s)=>a+statSec(s,respostas).ok,0);
+    const totPend = SECOES.reduce((a,s)=>a+statSec(s,respostas).pend,0);
+    return (
+      <div className="page">
+        <div className="header" style={{background:"#1F4E79"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <button className="back-btn" onClick={()=>{setSecIdx(SECOES.length-1);setTela("sec");}}>← Voltar</button>
+          </div>
+          <div style={{fontSize:19,fontWeight:700,color:"#fff",marginTop:8}}>📊 Resumo do Turno</div>
+          <div style={{color:"rgba(255,255,255,.75)",fontSize:13,marginTop:2}}>
+            {ident.nome} · {ident.turno} · {ident.data}
+          </div>
+          <div style={{display:"flex",justifyContent:"center",marginTop:12}}>
+            <div style={{background:"rgba(255,255,255,.15)",borderRadius:14,padding:"10px 28px",textAlign:"center"}}>
+              <span style={{fontSize:34,fontWeight:900,color:"#fff"}}>{pct}%</span>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.8)"}}>concluído</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="body" ref={bodyRef}>
+          {totPend > 0 && (
+            <div className="alert-banner">
+              ⚠️ {totPend} pendência{totPend>1?"s":""} registrada{totPend>1?"s":""} — revisar antes de finalizar
+            </div>
+          )}
+
+          {SECOES.map(s=>{
+            const st = statSec(s, respostas);
+            const ok = st.ok+st.total-st.ok-st.pend===s.itens.length;
+            return (
+              <div key={s.id} className="item-card" style={{borderLeft:`4px solid ${s.cor}`}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                  <span style={{fontWeight:700,fontSize:14}}>{s.icon} {s.titulo}</span>
+                  <span style={{fontSize:20}}>{ok?"✅":"⚠️"}</span>
+                </div>
+                <StatBar ok={st.ok} pend={st.pend} na={st.total-st.ok-st.pend}/>
+                {st.pend > 0 && (
+                  <div style={{marginTop:10}}>
+                    {s.itens.map((item,i)=>{
+                      const r = respostas[`${s.id}_${i}`]||{};
+                      if(r.status!=="pend") return null;
+                      return <div key={i} style={{fontSize:12,color:"#8B0000",padding:"4px 0",borderTop:"1px solid #fdecea"}}>
+                        ✘ {item}{r.obs?` — ${r.obs}`:""}
+                      </div>;
+                    })}
+                  </div>
+                )}
+                <button className="obs-toggle" style={{marginTop:10,color:s.cor}}
+                  onClick={()=>{setSecIdx(SECOES.indexOf(s));setTela("sec");}}>
+                  ✏️ Editar esta seção
+                </button>
+              </div>
+            );
+          })}
+
+          <div className="card">
+            <div className="card-title">📝 Observações Gerais</div>
+            <textarea className="obs-input"
+              placeholder="Informe ocorrências gerais, equipamentos com falha, solicitações ao supervisor..."
+              value={ident.obs_final}
+              onChange={e=>setIdent(p=>({...p,obs_final:e.target.value}))}
+              rows={4}/>
+          </div>
+          <div className="spacer"/>
+        </div>
+
+        <div className="footer">
+          <button className="btn-primary" style={{background:"#1F4E79"}} onClick={copiar}>
+            {copied ? "✅ Copiado!" : "📤 Compartilhar / Copiar (WhatsApp)"}
+          </button>
+          <button className="btn-primary" style={{background:"#1A5C2E",marginTop:10}} onClick={()=>setTela("fim")}>
+            ✅ Finalizar e Assinar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── TELA: FINALIZADO ─────────────────────────────────────────────────────
+  const totOk2   = SECOES.reduce((a,s)=>a+statSec(s,respostas).ok,0);
+  const totPend2 = SECOES.reduce((a,s)=>a+statSec(s,respostas).pend,0);
+  return (
+    <div className="page">
+      <div className="body" ref={bodyRef} style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
+        <span className="fin-icon">✅</span>
+        <div className="fin-title">Turno Registrado!</div>
+        <div className="fin-sub">{ident.nome} — {ident.cargo}</div>
+        <div className="fin-sub" style={{marginBottom:20}}>{ident.turno} · {ident.data}</div>
+
+        <div className="fin-icons">
+          {SECOES.map(s=>{
+            const st = statSec(s,respostas);
+            return (
+              <div key={s.id} style={{textAlign:"center"}}>
+                <div style={{fontSize:24}}>{st.ok===s.itens.length?"✅":"⚠️"}</div>
+                <div style={{fontSize:11,color:"#666",marginTop:2}}>{s.icon}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="sum-box" style={{width:"100%"}}>
+          <div className="sum-title">Resumo Final</div>
+          <div style={{fontSize:14,color:"#1A5C2E",fontWeight:700}}>✔ {totOk2} itens OK</div>
+          {totPend2>0 && <div style={{fontSize:14,color:"#8B0000",fontWeight:700}}>✘ {totPend2} pendência{totPend2>1?"s":""}</div>}
+          <div style={{fontSize:13,color:"#555"}}>{totalItens-totOk2-totPend2} N/A</div>
+        </div>
+
+        <button className="btn-primary" style={{background:"#1F4E79",marginBottom:12,width:"100%"}} onClick={copiar}>
+          {copied?"✅ Copiado!":"📤 Compartilhar Resumo (WhatsApp)"}
+        </button>
+        <button className="btn-primary" style={{background:"#555",width:"100%"}} onClick={novoTurno}>
+          🔄 Novo Turno
+        </button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
